@@ -1,62 +1,117 @@
 package cli
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"image"
+	"image/png"
 	"os"
 )
 
 type OperationMode uint8
 
 const (
-	ModeEncode OperationMode = iota
-	ModeDecode
+	ModeEmbed OperationMode = iota
+	ModeExtract
 )
 
 type Args struct {
-	Mode      OperationMode
-	InputFile []byte
-	Text      string
+	Mode    OperationMode
+	Text    string
+	Image   image.Image
+	OutFile string
 }
 
-func newArgs(mode OperationMode, infile []byte, text string) *Args {
+func newArgs(mode OperationMode, img image.Image, text, outfile string) *Args {
 	return &Args{
-		Mode:      mode,
-		InputFile: infile,
-		Text:      text,
+		Mode:    mode,
+		Text:    text,
+		Image:   img,
+		OutFile: outfile,
 	}
 }
 
-// todo: rename encode to embed
-
 func ParseCli() (*Args, error) {
-	eMode := flag.Bool("e", false, "Encode mode")
-	dMode := flag.Bool("d", false, "Decode mode")
+	eMode := flag.Bool("e", false, "Embed mode")
+	dMode := flag.Bool("d", false, "Extract mode")
 	infilePath := flag.String("i", "", "Specifies input file")
+	outfilePath := flag.String("o", "", "Specifies output file")
 	text := flag.String("t", "", "Text to hide")
 	flag.Parse()
 
-	if !(*eMode || *dMode) || (*eMode && *dMode) {
-		return nil, fmt.Errorf("choose either '-e' (encode) or '-d' (decode)")
-	}
-
-	mode := ModeEncode
+	// Set the mode
+	mode := ModeEmbed
 	if *dMode {
-		mode = ModeDecode
+		mode = ModeExtract
 	}
 
-	if *infilePath == "" {
-		return nil, fmt.Errorf("input file path is required")
-	}
-
-	if (mode == ModeEncode) && (*text == "") {
-		return nil, fmt.Errorf("text is required for encoding")
-	}
-
-	fileContent, err := os.ReadFile(*infilePath)
+	err := checkFlags(eMode, dMode, infilePath, outfilePath, mode, text)
 	if err != nil {
-		return nil, fmt.Errorf("error reading input file '%v': %w", *infilePath, err)
+		return nil, err
 	}
 
-	return newArgs(mode, fileContent, *text), nil
+	// Open the image file
+	imgFile, err := os.ReadFile(*infilePath)
+	if err != nil {
+		return nil, fmt.Errorf("error opening file: %v", err)
+	}
+
+	// Check png signature (first 8 bytes)
+	err = checkPNG(imgFile)
+	if err != nil {
+		return nil, err
+	}
+
+	img, err := decodeImage(imgFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return newArgs(mode, img, *text, *outfilePath), nil
+}
+
+// checkFlags checks the flags for required values
+func checkFlags(eMode *bool, dMode *bool, infilePath *string, outfilePath *string, mode OperationMode, text *string) error {
+	// Check for required flags
+	if !(*eMode || *dMode) || (*eMode && *dMode) {
+		return fmt.Errorf("choose either '-e' (encode) or '-d' (decode)")
+	}
+
+	// Check for input file
+	if *infilePath == "" {
+		return fmt.Errorf("input file path is required")
+	}
+
+	// Check for output file
+	if mode == ModeEmbed && *outfilePath == "" {
+		return fmt.Errorf("output file path is required for encoding")
+
+	}
+
+	// Check for required text
+	if (mode == ModeEmbed) && (*text == "") {
+		return fmt.Errorf("text is required for encoding")
+	}
+	return nil
+}
+
+// checkPNG checks the first 8 bytes of the file to see if it's a PNG
+func checkPNG(imgFile []byte) error {
+	if len(imgFile) < 8 {
+		return fmt.Errorf("file is too small to be a PNG")
+	}
+	if string(imgFile[:8]) != "\x89PNG\r\n\x1a\n" {
+		return fmt.Errorf("file is not a PNG")
+	}
+	return nil
+}
+
+// decodeImage decodes the image from the file
+func decodeImage(imgFile []byte) (image.Image, error) {
+	img, err := png.Decode(bytes.NewReader(imgFile))
+	if err != nil {
+		return nil, fmt.Errorf("error decoding image: %v", err)
+	}
+	return img, nil
 }
