@@ -18,7 +18,7 @@ func main() {
 	case cli.ModeEmbed:
 		embed(args)
 	case cli.ModeExtract:
-		break
+		extract(args)
 	}
 }
 
@@ -39,5 +39,13 @@ func embed(args *cli.Args) {
 		panic(err)
 	}
 
-	fmt.Println("Image embedded successfully")
+	fmt.Println("Text embedded successfully")
+}
+
+func extract(args *cli.Args) {
+	message, err := lsb.Extract(args.Image)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(message)
 }
