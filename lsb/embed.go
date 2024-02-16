@@ -5,10 +5,22 @@ import (
 	"image"
 	"image/color"
 	"math/rand"
+	"stego/encryption"
 	"strconv"
 )
 
-func Embed(origImg image.Image, message string) (image.Image, error) {
+// message should be encoded as [whole message length]\x00[nonce length]\x00[nonce][salt (fixed 8 bytes)][encrypted message]
+
+func Embed(origImg image.Image, message string, encrypted bool, encKey []byte) (image.Image, error) {
+	if encrypted {
+		key := encKey[8:] // cut 8 bytes of salt
+		encMessage, nonce, err := encryption.Encrypt(message, key)
+		if err != nil {
+			return nil, err
+		}
+		message = strconv.Itoa(len(nonce)) + "\x00" + string(nonce) + string(encMessage) + "\x00" + string(encKey[:8])
+	}
+
 	message = addLen(message)
 	newImg := image.NewRGBA(origImg.Bounds())
 	imgWidth := origImg.Bounds().Max.X

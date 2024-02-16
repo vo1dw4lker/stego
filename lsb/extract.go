@@ -2,15 +2,19 @@ package lsb
 
 import (
 	"image"
+	"stego/encryption"
 	"strconv"
 )
 
-func Extract(img image.Image) (string, error) {
+// message should be encoded as [whole message length]\x00[nonce length]\x00[nonce][salt (fixed 8 bytes)][encrypted message]
+
+func Extract(img image.Image, encrypted bool, password string) (string, error) {
 	ch := make(chan byte)
 	go streamBytes(ch, img)
 
-	var message string
-	var lengthStr string
+	var message, lengthStr, nonceStr string
+	var length int
+	var key, nonce []byte
 	for {
 		char := <-ch
 		if char == 0 {
@@ -18,10 +22,38 @@ func Extract(img image.Image) (string, error) {
 		}
 		lengthStr += string(char)
 	}
+	if encrypted {
+		for {
+			char := <-ch
+			if char == 0 {
+				break
+			}
+			nonceStr += string(char)
+		}
+	}
 
 	length, err := strconv.Atoi(lengthStr)
 	if err != nil {
 		return "", err
+	}
+
+	if encrypted {
+		nonceLength, err := strconv.Atoi(nonceStr)
+		if err != nil {
+			return "", err
+		}
+
+		nonce = make([]byte, nonceLength)
+		for i := 0; i < nonceLength; i++ {
+			nonce[i] = <-ch
+		}
+		salt := make([]byte, 8)
+		for i := 0; i < 8; i++ {
+			salt[i] = <-ch
+		}
+		key, _ = encryption.PBKDF2(password, salt)
+
+		length -= nonceLength + 1 + 8
 	}
 
 	for i := 0; i < length; i++ {
@@ -29,10 +61,20 @@ func Extract(img image.Image) (string, error) {
 		message += string(char)
 	}
 
+	if encrypted {
+		decMessage, err := encryption.Decrypt(message, key, nonce)
+		if err != nil {
+			return "", err
+		}
+		return string(decMessage), nil
+
+	}
+
 	return message, nil
 }
 
 // Message is encoded as: [length as str]/x00/[message]
+// If encrypted, the message is: [length as str]/x00/[nonce size]/x00[nonce][encrypted message]
 func streamBytes(ch chan byte, img image.Image) {
 	imgWidth := img.Bounds().Max.X
 	imgHeight := img.Bounds().Max.Y
