@@ -36,8 +36,8 @@ func ParseCli() (*Args, error) {
 	eMode := flag.Bool("e", false, "Embed mode")
 	dMode := flag.Bool("d", false, "Extract mode")
 	infilePath := flag.String("i", "", "Specifies input file")
-	outfilePath := flag.String("o", "", "Specifies output file")
-	text := flag.String("t", "", "Text to hide")
+	outfilePath := flag.String("o", "", "Specifies output file (embed mode only)")
+	text := flag.String("t", "", "Text to hide (embed mode only)")
 	flag.Parse()
 
 	// Set the mode
