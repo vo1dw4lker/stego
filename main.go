@@ -5,6 +5,7 @@ import (
 	"image/png"
 	"os"
 	"stego/cli"
+	"stego/encryption"
 	"stego/lsb"
 )
 
@@ -25,27 +26,37 @@ func main() {
 func embed(args *cli.Args) {
 	outfile, err := os.Create(args.OutFile)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	defer outfile.Close()
 
-	newImg, err := lsb.Embed(args.Image, args.Text)
+	var encKey []byte = nil
+	if args.Encrypted {
+		key, salt := encryption.PBKDF2(args.EncPasswd, nil)
+		encKey = append(salt, key...)
+	}
+
+	newImg, err := lsb.Embed(args.Image, []byte(args.Text), args.Encrypted, encKey)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	err = png.Encode(outfile, newImg)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	fmt.Println("Text embedded successfully")
 }
 
 func extract(args *cli.Args) {
-	message, err := lsb.Extract(args.Image)
+	message, err := lsb.Extract(args.Image, args.Encrypted, args.EncPasswd)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	fmt.Println(message)
 }

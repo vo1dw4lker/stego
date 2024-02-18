@@ -17,27 +17,22 @@ const (
 )
 
 type Args struct {
-	Mode    OperationMode
-	Text    string
-	Image   image.Image
-	OutFile string
-}
-
-func newArgs(mode OperationMode, img image.Image, text, outfile string) *Args {
-	return &Args{
-		Mode:    mode,
-		Text:    text,
-		Image:   img,
-		OutFile: outfile,
-	}
+	Mode      OperationMode
+	Text      string
+	Image     image.Image
+	OutFile   string
+	Encrypted bool
+	EncPasswd string
 }
 
 func ParseCli() (*Args, error) {
 	eMode := flag.Bool("e", false, "Embed mode")
 	dMode := flag.Bool("d", false, "Extract mode")
 	infilePath := flag.String("i", "", "Specifies input file")
-	outfilePath := flag.String("o", "", "Specifies output file (embed mode only)")
-	text := flag.String("t", "", "Text to hide (embed mode only)")
+	outfilePath := flag.String("o", "", "Specifies output file (embed mode only0")
+  text := flag.String("t", "", "Text to hide (embed mode only)")
+	passwd := flag.String("p", "", "Password to embed/extract encrypted text")
+
 	flag.Parse()
 
 	// Set the mode
@@ -68,7 +63,16 @@ func ParseCli() (*Args, error) {
 		return nil, err
 	}
 
-	return newArgs(mode, img, *text, *outfilePath), nil
+	encrypted := *passwd != ""
+
+	return &Args{
+		Mode:      mode,
+		Text:      *text,
+		Image:     img,
+		OutFile:   *outfilePath,
+		Encrypted: encrypted,
+		EncPasswd: *passwd,
+	}, nil
 }
 
 // checkFlags checks the flags for required values
