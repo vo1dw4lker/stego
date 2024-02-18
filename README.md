@@ -1,7 +1,6 @@
 # steGo
 
-steGo is a steganography tool that allows you to hide files in images.
-It is written in Go and uses the `image` package to manipulate images.
+steGo is a steganography tool that allows you to hide plain or encrypted text in images. It uses `image` package to read and write images and `crypto` package to encrypt and decrypt text.
 
 ## Installation
 
@@ -23,9 +22,11 @@ Available flags:
         Specifies output file (embed mode only)
   -t string
         Text to hide (embed mode only)
+  -p string
+        Password to embed/extract encrypted text
 ```
 
-To pass multi-word text to the `-t` flag, use quotes.
+To pass multi-word text to the `-t` flag use quotes.
 
 ## Examples
 
@@ -37,6 +38,16 @@ Embedding:
 Extracting:
 ```
 ./stego -d -i output.png
+```
+
+Embedding encrypted text:
+```
+./stego -e -i image.png -o output.png -t "Hello, world!" -p "password"
+```
+
+Extracting encrypted text:
+```
+./stego -d -i output.png -p "password"
 ```
 
 ## License
