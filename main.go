@@ -26,7 +26,8 @@ func main() {
 func embed(args *cli.Args) {
 	outfile, err := os.Create(args.OutFile)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	defer outfile.Close()
 
@@ -36,14 +37,16 @@ func embed(args *cli.Args) {
 		encKey = append(salt, key...)
 	}
 
-	newImg, err := lsb.Embed(args.Image, args.Text, args.Encrypted, encKey)
+	newImg, err := lsb.Embed(args.Image, []byte(args.Text), args.Encrypted, encKey)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	err = png.Encode(outfile, newImg)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	fmt.Println("Text embedded successfully")
@@ -52,7 +55,8 @@ func embed(args *cli.Args) {
 func extract(args *cli.Args) {
 	message, err := lsb.Extract(args.Image, args.Encrypted, args.EncPasswd)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	fmt.Println(message)
 }

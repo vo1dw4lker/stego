@@ -5,7 +5,7 @@ import (
 	"crypto/cipher"
 )
 
-func Encrypt(message string, encKey []byte) (ciphertext, nonce []byte, err error) {
+func Encrypt(message []byte, encKey []byte) (ciphertext, nonce []byte, err error) {
 	block, err := aes.NewCipher(encKey)
 	if err != nil {
 		return nil, nil, err
@@ -17,12 +17,12 @@ func Encrypt(message string, encKey []byte) (ciphertext, nonce []byte, err error
 	}
 
 	nonce = RandomBytes(aead.NonceSize())
-	cipherbytes := aead.Seal(nil, nonce, []byte(message), nil)
+	cipherbytes := aead.Seal(nil, nonce, message, nil)
 
 	return cipherbytes, nonce, nil
 }
 
-func Decrypt(ciphertext string, encKey []byte, nonce []byte) (message []byte, err error) {
+func Decrypt(ciphertext []byte, encKey []byte, nonce []byte) (message []byte, err error) {
 	block, err := aes.NewCipher(encKey)
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func Decrypt(ciphertext string, encKey []byte, nonce []byte) (message []byte, er
 		return nil, err
 	}
 
-	plaintext, err := aead.Open(nil, nonce, []byte(ciphertext), nil)
+	plaintext, err := aead.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
 		return nil, err
 	}
