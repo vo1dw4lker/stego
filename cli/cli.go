@@ -29,9 +29,10 @@ func ParseCli() (*Args, error) {
 	eMode := flag.Bool("e", false, "Embed mode")
 	dMode := flag.Bool("d", false, "Extract mode")
 	infilePath := flag.String("i", "", "Specifies input file")
-	outfilePath := flag.String("o", "", "Specifies output file")
-	text := flag.String("t", "", "Text to hide")
-	passwd := flag.String("p", "", "Password to embed/extract")
+	outfilePath := flag.String("o", "", "Specifies output file (embed mode only0")
+  text := flag.String("t", "", "Text to hide (embed mode only)")
+	passwd := flag.String("p", "", "Password to embed/extract encrypted text")
+
 	flag.Parse()
 
 	// Set the mode
